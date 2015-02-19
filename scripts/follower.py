@@ -1,19 +1,27 @@
+#!/usr/bin/env python
+
+import roslib
 import rospy
+import actionlib
+
 from people_msgs.msg import PositionMeasurementArray
-from geometry_msgs import *
+from geometry_msgs.msg import *
+from move_base_msgs import MoveBaseActionGoal
 
 def callback(data):
     # publish to whatever message the driving is going to take place
-    pub = rospy.Publisher('move_base_simple/goal', 'PoseStamped', queue_size=10)
+    client = actionlib.SimpleActionClient("move_base", MoveBaseAction)
+    client.wait_for_server()
     
-    target_pose = PoseStamped()
-    target_pose.pose.position = data.people[0].pos
+    if len(data.people) > 0:
+        target_pose = MoveBaseGoal()
+        target_pose.pose.position = data.people[0].pos
 
-    pub.publish(target_pose)
+        client.send_goal(target_pose)
     
 def follower():
     rospy.init_node('human_follower')
-    rospy.Subscriber('people_tracker_measurements','PositionMeasurementArray', callback)
+    rospy.Subscriber('people_tracker_measurements',PositionMeasurementArray, callback)
     rospy.spin()
 
 if __name__ == '__main__':
