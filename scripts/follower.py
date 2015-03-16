@@ -24,10 +24,10 @@ def callback(data):
         target_goal_simple.pose.position = data.people[0].pos
         target_goal_simple.pose.position.z = 0
         target_goal_simple.pose.orientation.w = 1
-        target_goal_simple.header.frame_id = 'base_link'
+        target_goal_simple.header.frame_id = 'map'
         target_goal_simple.header.stamp = rospy.Time.now()
         #target_goal.target_pose.pose.position = data.people[0].pos
-        
+
         #sending goal
         rospy.loginfo("sending goal")
         pub.publish(target_goal_simple)
