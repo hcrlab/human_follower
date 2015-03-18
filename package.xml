@@ -40,10 +40,12 @@
   <!-- Use test_depend for packages you need only for testing: -->
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>tf</build_depend>
   <build_depend>leg_detector</build_depend>
   <build_depend>people_msgs</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
+  <run_depend>tf</run_depend>
   <run_depend>people_msgs</run_depend>
   <run_depend>leg_detector</run_depend>
   <run_depend>rospy</run_depend>
