@@ -5,45 +5,85 @@ import rospy
 import actionlib
 import tf
 
+import math
+
 from people_msgs.msg import PositionMeasurementArray
 from geometry_msgs.msg import *
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 # distances in meters
-DIST_FROM_TARGET = .2
+DIST_FROM_TARGET = .5
+
+class ListenerSingleton:
+    created = False
+    listener = None
+
+    @staticmethod
+    def new():
+        if (ListenerSingleton.created):
+            return ListenerSingleton.listener
+        else:
+            ListenerSingleton.created = True
+            ListenerSingleton.listener = tf.TransformListener()
+            rospy.loginfo("created new instance of listener")
+            return ListenerSingleton.listener
+
 
 def callback(data):
     # publish to whatever message the driving is going to take place
     pub = rospy.Publisher("move_base_simple/goal", PoseStamped, queue_size = 10)
+    positionPub = rospy.Publisher("currentPosition", PoseStamped, queue_size = 10)
     
     if len(data.people) > 0:
         #person found
         rospy.loginfo("Found person, generating goal")
-        listener = tf.TransformListener()
+
+        # selecting most probable person.
+        rospy.loginfo("selecting most probagly person")
+        maxReliability = 0
+        personIndex = 0
+        for i in range(len(data.people)):
+            if (data.people[i].reliability > maxReliability):
+                personIndex = i
+
+        listener = ListenerSingleton.new()
         target_goal_simple = PoseStamped()
         
         #forming a proper PoseStamped message
         try:
-            (trans, rot) = listener.lookupTransform('/base_link', '/map', rospy.Time.now())
-            rospy.loginfo("Transform obtained x:" + trans[0] + " y:" + trans[1])
+            (trans, rot) = listener.lookupTransform('/map', '/base_link', rospy.Time())
+            rospy.loginfo("Transform obtained")
 
             # This is where the target person's legs are
-            legPosition = data.people[0].pos
+            legPosition = data.people[i].pos
             
             rospy.loginfo("Computing target")
             # computing target point that is .2 meters away 
-            difference = Point()
-            difference.x = legPosition.x - trans[0]
-            defference.y = legPosition.y - trans[1]
+            differenceX = legPosition.x - trans[0]
+            differenceY = legPosition.y - trans[1]
+
+            # publishing current position for visualization
+            current_location = PoseStamped()
+            current_location.pose.position.x = trans[0]
+            current_location.pose.position.y = trans[1]
+            current_location.pose.position.z = 0
+            current_location.pose.orientation.x = rot[0]
+            current_location.pose.orientation.y = rot[1]
+            current_location.pose.orientation.z = rot[2]
+            current_location.pose.orientation.w = rot[3]
+            current_location.header.frame_id = 'map'
+            current_location.header.stamp = rospy.Time.now()
             
-            angle = math.atan(difference.y, difference.y)
-            length = sqrt(difference.x ** 2 + difference.y ** 2)
+            # calculating target location
+            angle = math.atan2(differenceY, differenceX)
+            length = math.hypot(differenceX, differenceY)
             
             target_length = length - DIST_FROM_TARGET
 
-            targetX = target_length * math.cos(angle)
-            targetY = target_length * math.sin(angle)
+            targetX = target_length * math.cos(angle) + trans[0]
+            targetY = target_length * math.sin(angle) + trans[1]
 
+            # forming target goal
             target_goal_simple.pose.position.x = targetX
             target_goal_simple.pose.position.y = targetY
             target_goal_simple.pose.position.z = 0
@@ -54,9 +94,11 @@ def callback(data):
             # sending goal
             rospy.loginfo("sending goal")
             pub.publish(target_goal_simple)
+            positionPub.publish(current_location)
 
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            rospy.loginfo("failed to get tf transform")
+        except Exception as expt:
+            print type(expt)
+            print expt.args
     
 def follower():
     rospy.init_node('human_follower')
@@ -68,5 +110,3 @@ if __name__ == '__main__':
         follower()
     except rospy.ROSInterruptException:
         pass
-
-    
