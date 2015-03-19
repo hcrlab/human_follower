@@ -12,6 +12,7 @@ from geometry_msgs.msg import *
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 # distances in meters
+DIST_FROM_PREVIOUS = 3
 DIST_FROM_TARGET = .5
 
 class ListenerSingleton:
@@ -26,12 +27,11 @@ class ListenerSingleton:
             ListenerSingleton.created = True
             ListenerSingleton.listener = tf.TransformListener()
             rospy.loginfo("created new instance of listener")
-            return ListenerSingleton.listener
+            return ListenerSingleton.listener    
 
-
-def callback(data):
-    # publish to whatever message the driving is going to take place
-    pub = rospy.Publisher("move_base_simple/goal", PoseStamped, queue_size = 10)
+    def callback(data):
+        # publish to whatever message the driving is going to take place
+        pub = rospy.Publisher("move_base_simple/goal", PoseStamped, queue_size = 10)
     positionPub = rospy.Publisher("currentPosition", PoseStamped, queue_size = 10)
     
     if len(data.people) > 0:
@@ -63,16 +63,16 @@ def callback(data):
             differenceY = legPosition.y - trans[1]
 
             # publishing current position for visualization
-            current_location = PoseStamped()
-            current_location.pose.position.x = trans[0]
-            current_location.pose.position.y = trans[1]
-            current_location.pose.position.z = 0
-            current_location.pose.orientation.x = rot[0]
-            current_location.pose.orientation.y = rot[1]
-            current_location.pose.orientation.z = rot[2]
-            current_location.pose.orientation.w = rot[3]
-            current_location.header.frame_id = 'map'
-            current_location.header.stamp = rospy.Time.now()
+            curr_location = PoseStamped()
+            curr_location.pose.position.x = trans[0]
+            curr_location.pose.position.y = trans[1]
+            curr_location.pose.position.z = 0
+            curr_location.pose.orientation.x = rot[0]
+            curr_location.pose.orientation.y = rot[1]
+            curr_location.pose.orientation.z = rot[2]
+            curr_location.pose.orientation.w = rot[3]
+            curr_location.header.frame_id = 'map'
+            curr_location.header.stamp = rospy.Time.now()
             
             # calculating target location
             angle = math.atan2(differenceY, differenceX)
@@ -94,12 +94,13 @@ def callback(data):
             # sending goal
             rospy.loginfo("sending goal")
             pub.publish(target_goal_simple)
-            positionPub.publish(current_location)
+            positionPub.publish(curr_location)
 
         except Exception as expt:
             print type(expt)
             print expt.args
     
+
 def follower():
     rospy.init_node('human_follower')
     rospy.Subscriber('people_tracker_measurements',PositionMeasurementArray, callback)
