@@ -12,9 +12,9 @@ from geometry_msgs.msg import *
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 # constants
-DIST_FROM_PREVIOUS = 3
+DIST_FROM_PREVIOUS = 1
 DIST_FROM_TARGET = .5
-RELIABILITY_MIN = .5
+RELIABILITY_MIN = .4
 
 class ListenerSingleton:
     created = False
@@ -33,18 +33,16 @@ class ListenerSingleton:
 class HumanFollower:
 
     def __init__(self):
-        previousPose = None
-        listener = tf.TransformListener()
-        rospy.init_node('human_follower')
+        self.previousGoal = None
 
-    def callback(data):
+    def callback(self,data):
         # publish to whatever message the driving is going to take place
         pub = rospy.Publisher("move_base_simple/goal", PoseStamped, queue_size = 10)
         positionPub = rospy.Publisher("currentPosition", PoseStamped, queue_size = 10)
         
         if len(data.people) > 0:
             # selecting most probable person.
-            rospy.loginfo("selecting most probable person")
+            rospy.loginfo("Looking for people")
 
             maxReliability = RELIABILITY_MIN
             personIndex = -1
@@ -56,7 +54,8 @@ class HumanFollower:
             if (personIndex != -1):
                 rospy.loginfo("Found person, generating goal")
                 try:
-                    (trans, rot) = self.listener.lookupTransform('/map', '/base_link', rospy.Time())
+                    listener = ListenerSingleton.new()
+                    (trans, rot) = listener.lookupTransform('/map', '/base_link', rospy.Time())
                     rospy.loginfo("Transform obtained")
 
                     # This is where the target person's legs are
@@ -98,8 +97,26 @@ class HumanFollower:
                     target_goal_simple.header.stamp = rospy.Time.now()
 
                     # sending goal
-                    rospy.loginfo("sending goal")
-                    pub.publish(target_goal_simple)
+                    if (self.previousGoal == None):
+                        rospy.loginfo("first goal woo hoo!")
+                        self.previousGoal = target_goal_simple
+                        rospy.loginfo("sending goal")
+                        pub.publish(target_goal_simple)
+                    else:
+                        #calculating distance from previous goal
+                        diffX = target_goal_simple.pose.position.x - self.previousGoal.pose.position.x
+                        diffY = target_goal_simple.pose.position.y - self.previousGoal.pose.position.y
+                        dist = math.hypot(diffX, diffY)
+                        
+                        if (dist > DIST_FROM_PREVIOUS):
+                            self.previousGoal = target_goal_simple
+                            rospy.loginfo("sending new goal")
+                            pub.publish(target_goal_simple)
+                        else:
+                            rospy.loginfo("")
+                            #rospy.loginfo("too close to current goal!")
+
+                    # publish current position for visualization
                     positionPub.publish(curr_Position)
 
                 except Exception as expt:
@@ -107,13 +124,14 @@ class HumanFollower:
                     print expt.args
             
 
-    def run():
+    def run(self):
+        rospy.init_node("human_follower")
         rospy.Subscriber('people_tracker_measurements',PositionMeasurementArray, self.callback)
         rospy.spin()
 
 if __name__ == '__main__':
     try:
         hf = HumanFollower()
-        hf.run
+        hf.run()
     except rospy.ROSInterruptException:
-        pass
+        rospy.loginfo("hiiii")
