@@ -12,8 +12,9 @@ from geometry_msgs.msg import *
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 # constants
-DIST_FROM_PREVIOUS = 1
+DIST_FROM_PREVIOUS = .5
 DIST_FROM_TARGET = .5
+DIST_RELIABLE = 1
 RELIABILITY_MIN = .4
 
 class ListenerSingleton:
@@ -41,13 +42,22 @@ class HumanFollower:
         positionPub = rospy.Publisher("currentPosition", PoseStamped, queue_size = 10)
         
         if len(data.people) > 0:
-            # selecting most probable person.
+            # selecting most probable person
             rospy.loginfo("Looking for people")
 
             maxReliability = RELIABILITY_MIN
             personIndex = -1
 
             for i in range(len(data.people)):
+                
+                # reliability metric is based on a combination of leg_detector results
+                # and how far this current goal is from the pervious goal. 
+                # If there is no previous goal, then it's simply the leg_detector results
+                
+                if (self.previousGoal == None):
+                    reliability = data.people[i].reliability
+                else:
+
                 if (data.people[i].reliability > maxReliability):
                     personIndex = i
             
@@ -57,14 +67,6 @@ class HumanFollower:
                     listener = ListenerSingleton.new()
                     (trans, rot) = listener.lookupTransform('/map', '/base_link', rospy.Time())
                     rospy.loginfo("Transform obtained")
-
-                    # This is where the target person's legs are
-                    legPosition = data.people[i].pos
-                    
-                    rospy.loginfo("Computing target")
-                    # computing target point that is .2 meters away 
-                    differenceX = legPosition.x - trans[0]
-                    differenceY = legPosition.y - trans[1]
 
                     # forming a message of current position for visualization
                     curr_Position = PoseStamped()
@@ -77,6 +79,15 @@ class HumanFollower:
                     curr_Position.pose.orientation.w = rot[3]
                     curr_Position.header.frame_id = 'map'
                     curr_Position.header.stamp = rospy.Time.now()
+
+                    # This is where the target person's legs are                                      
+                    legPosition = data.people[i].pos
+
+                    rospy.loginfo("Computing target")
+
+                    # computing target point that is set distance away    
+                    differenceX = legPosition.x - trans[0]
+                    differenceY = legPosition.y - trans[1]
                     
                     # calculating target location
                     angle = math.atan2(differenceY, differenceX)
@@ -114,7 +125,7 @@ class HumanFollower:
                             pub.publish(target_goal_simple)
                         else:
                             rospy.loginfo("")
-                            #rospy.loginfo("too close to current goal!")
+                            rospy.loginfo("too close to current goal!")
 
                     # publish current position for visualization
                     positionPub.publish(curr_Position)
