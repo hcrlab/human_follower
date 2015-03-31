@@ -13,7 +13,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 # constants
 DIST_FROM_PREVIOUS = .3 # how close is too close that robot won't send a new goal
-DIST_FROM_TARGET = .5 # how far away the robot should stop from the target
+DIST_FROM_TARGET = .4 # how far away the robot should stop from the target
 DIST_NEXT_GOAL = .7 # how far the next goal should idealy be
 PROXIMITY_RELIABILITY = .4 # how far from DIST_NEXT_GOAL is going to bring extra reliaility
 RELIABILITY_MIN = .4 #minimum reliability of the position
@@ -36,6 +36,7 @@ class HumanFollower:
 
     def __init__(self):
         self.previousGoal = None
+        self.trackedObjectID = "Steve"
 
     def callback(self,data):
         # publish to whatever message the driving is going to take place
@@ -52,21 +53,26 @@ class HumanFollower:
             for i in range(len(data.people)):
                 
                 # reliability metric is based on a combination of leg_detector results
-                # and how far this current goal is from the pervious goal. 
+                # and how far this current goal is from the pervious goal.
+                # if the same person is still in sight, it is the most reliable
                 # If there is no previous goal, then it's simply the leg_detector results
                 
                 if (self.previousGoal == None):
                     reliability = data.people[i].reliability
                 else:
-                    currPersonPosition = data.people[i].pos
-                    distFromPreviousGoalX = currPersonPosition.x - self.previousGoal.pose.position.x
-                    distFromPreviousGoalY = currPersonPosition.y - self.previousGoal.pose.position.y
-                    distFromPreviousGoal = math.hypot(distFromPreviousX, distFromPreviousY)
-                    distError = math.abs(distFromPreviousGoal - DIST_NEXT_GOAL) # how far this goal is from the preffered distance
-                    reliability = data.people[i].reliability + (PROXIMITY_RELIABILITY - distError)
+                    if (data.people[i].object_id == self.trackedObjectID):
+                        reliability = 100
+                    else:
+                        currPersonPosition = data.people[i].pos
+                        distFromPreviousGoalX = currPersonPosition.x - self.previousGoal.pose.position.x
+                        distFromPreviousGoalY = currPersonPosition.y - self.previousGoal.pose.position.y
+                        distFromPreviousGoal = math.hypot(distFromPreviousGoalX, distFromPreviousGoalY)
+                        distError = abs(distFromPreviousGoal - DIST_NEXT_GOAL) # how far this goal is from the preffered distance
+                        reliability = data.people[i].reliability + (PROXIMITY_RELIABILITY - distError)
 
 
                 if (reliability > maxReliability):
+                    maxReliability = reliability
                     personIndex = i
             
             if (personIndex != -1):
@@ -89,7 +95,7 @@ class HumanFollower:
                     curr_Position.header.stamp = rospy.Time.now()
 
                     # This is where the target person's legs are                                      
-                    legPosition = data.people[i].pos
+                    legPosition = data.people[personIndex].pos
 
                     rospy.loginfo("Computing target")
 
@@ -115,6 +121,8 @@ class HumanFollower:
                     target_goal_simple.header.frame_id = 'map'
                     target_goal_simple.header.stamp = rospy.Time.now()
 
+                    # setting currently tracked objectID
+                    self.trackedObjectID = data.people[personIndex].object_id
                     # sending goal
                     if (self.previousGoal == None):
                         rospy.loginfo("first goal woo hoo!")
