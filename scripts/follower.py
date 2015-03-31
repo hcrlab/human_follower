@@ -12,10 +12,11 @@ from geometry_msgs.msg import *
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 # constants
-DIST_FROM_PREVIOUS = .5
-DIST_FROM_TARGET = .5
-DIST_RELIABLE = 1
-RELIABILITY_MIN = .4
+DIST_FROM_PREVIOUS = .3 # how close is too close that robot won't send a new goal
+DIST_FROM_TARGET = .5 # how far away the robot should stop from the target
+DIST_NEXT_GOAL = .7 # how far the next goal should idealy be
+PROXIMITY_RELIABILITY = .4 # how far from DIST_NEXT_GOAL is going to bring extra reliaility
+RELIABILITY_MIN = .4 #minimum reliability of the position
 
 class ListenerSingleton:
     created = False
@@ -43,7 +44,7 @@ class HumanFollower:
         
         if len(data.people) > 0:
             # selecting most probable person
-            rospy.loginfo("Looking for people")
+            rospy.loginfo("Looking for suitble target")
 
             maxReliability = RELIABILITY_MIN
             personIndex = -1
@@ -57,12 +58,19 @@ class HumanFollower:
                 if (self.previousGoal == None):
                     reliability = data.people[i].reliability
                 else:
+                    currPersonPosition = data.people[i].pos
+                    distFromPreviousGoalX = currPersonPosition.x - self.previousGoal.pose.position.x
+                    distFromPreviousGoalY = currPersonPosition.y - self.previousGoal.pose.position.y
+                    distFromPreviousGoal = math.hypot(distFromPreviousX, distFromPreviousY)
+                    distError = math.abs(distFromPreviousGoal - DIST_NEXT_GOAL) # how far this goal is from the preffered distance
+                    reliability = data.people[i].reliability + (PROXIMITY_RELIABILITY - distError)
 
-                if (data.people[i].reliability > maxReliability):
+
+                if (reliability > maxReliability):
                     personIndex = i
             
             if (personIndex != -1):
-                rospy.loginfo("Found person, generating goal")
+                rospy.loginfo("Found target, generating goal")
                 try:
                     listener = ListenerSingleton.new()
                     (trans, rot) = listener.lookupTransform('/map', '/base_link', rospy.Time())
@@ -145,4 +153,4 @@ if __name__ == '__main__':
         hf = HumanFollower()
         hf.run()
     except rospy.ROSInterruptException:
-        rospy.loginfo("hiiii")
+        rospy.loginfo("oh no, he's dead!")
