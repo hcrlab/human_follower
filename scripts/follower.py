@@ -6,6 +6,7 @@ import actionlib
 import tf
 
 import math
+import sys, os
 
 from people_msgs.msg import PositionMeasurementArray
 from geometry_msgs.msg import *
@@ -49,9 +50,8 @@ class HumanFollower:
         self.trackedObjectID = "Steve"
 
 
-    def callback(self,data):
+    def callback(self, data):
         if len(data.people) > 0:
-        
             personIndex = self.findReliableTarget(data)
                     
             # found someone more probable than the min probability.
@@ -88,6 +88,7 @@ class HumanFollower:
                     self.lastKnownPosition = GoalEuler(goalX, goalY, angle)
                     
                     # sending goal if it is sufficiently different
+                    rospy.loginfo("judging goal")
                     if (self.previousGoal == None):
                         rospy.loginfo("first goal woo hoo!")
 
@@ -113,10 +114,16 @@ class HumanFollower:
                             self.pub.publish(target_goal_simple)
                         else:
                             rospy.loginfo("new goal canceled: too close to current goal!")
-
+                    
+                    self.lastKnownPosition = GoalEuler(goalX, goalY, angle)
+                
                 except Exception as expt:
-                    print type(expt)
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    print(exc_type, fname, exc_tb.tb_lineno)
+                    #print type(expt)
                     print expt.args
+                
 
     def buildGoalQuaternion(self, goalX, goalY, angle):
         rospy.loginfo("building final goal")
@@ -183,7 +190,11 @@ class HumanFollower:
         return personIndex
 
 
-    def sendCurrentPosition(self):
+    def sendCurrentPosition(self, trans, rot):
+        curr_Position = PoseStamped()
+        curr_Position.pose.position.x = trans[0]
+        curr_Position.pose.position.y = trans[0]
+        curr_Position.pose.position.z = 0
         curr_Position.pose.orientation.y = rot[1]
         curr_Position.pose.orientation.z = rot[2]
         curr_Position.pose.orientation.w = rot[3]
