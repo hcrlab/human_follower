@@ -34,7 +34,7 @@ class ListenerSingleton:
             return ListenerSingleton.listener    
 
 class GoalEuler:
-    def __init__(sefl, x, y, angle):
+    def __init__(self, x, y, angle):
         self.x = x
         self.y = y
         self.angle = angle
@@ -87,14 +87,14 @@ class HumanFollower:
                     goalY = target_length * math.sin(angle) + trans[1]
 
                     # setting last known position regardless of if the goal is sent or not
-                    #self.lastKnownPosition = GoalEuler(goalX, goalY, angle)
+                    self.lastKnownPosition = GoalEuler(goalX, goalY, angle)
                     
                     # sending goal if it is sufficiently different
                     rospy.loginfo("judging goal")
                     if (self.previousGoal == None):
                         rospy.loginfo("first goal woo hoo!")
 
-                        #self.previousGoal = GoalEuler(goalX, goalY, angle)
+                        self.previousGoal = GoalEuler(goalX, goalY, angle)
                         self.trackedObjectID = data.people[personIndex].object_id
 
                         target_goal_simple = self.buildGoalQuaternion(goalX, goalY, angle) 
@@ -118,9 +118,9 @@ class HumanFollower:
                             rospy.loginfo("new goal canceled: too close to current goal!")
                 
                 except Exception as expt:
-                    exc_type, exc_obj, exc_tb = sys.exc_info()
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    print(exc_type, fname, exc_tb.tb_lineno)
+                    #exc_type, exc_obj, exc_tb = sys.exc_info()
+                    #fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    #print(exc_type, fname, exc_tb.tb_lineno)
                     #print type(expt)
                     print expt.args
                 
