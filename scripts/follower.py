@@ -53,11 +53,13 @@ class HumanFollower:
     def callback(self, data):
         if len(data.people) > 0:
             personIndex = self.findReliableTarget(data)
-                    
+
             # found someone more probable than the min probability.
             if (personIndex != -1):
                 rospy.loginfo("Target Found")
+                
                 try:
+
                     listener = ListenerSingleton.new()
                     (trans, rot) = listener.lookupTransform('/map', '/base_link', rospy.Time())
                     rospy.loginfo("Transform obtained")
@@ -85,14 +87,14 @@ class HumanFollower:
                     goalY = target_length * math.sin(angle) + trans[1]
 
                     # setting last known position regardless of if the goal is sent or not
-                    self.lastKnownPosition = GoalEuler(goalX, goalY, angle)
+                    #self.lastKnownPosition = GoalEuler(goalX, goalY, angle)
                     
                     # sending goal if it is sufficiently different
                     rospy.loginfo("judging goal")
                     if (self.previousGoal == None):
                         rospy.loginfo("first goal woo hoo!")
 
-                        self.previousGoal = GoalEuler(goalX, goalY, angle)
+                        #self.previousGoal = GoalEuler(goalX, goalY, angle)
                         self.trackedObjectID = data.people[personIndex].object_id
 
                         target_goal_simple = self.buildGoalQuaternion(goalX, goalY, angle) 
@@ -114,8 +116,6 @@ class HumanFollower:
                             self.pub.publish(target_goal_simple)
                         else:
                             rospy.loginfo("new goal canceled: too close to current goal!")
-                    
-                    self.lastKnownPosition = GoalEuler(goalX, goalY, angle)
                 
                 except Exception as expt:
                     exc_type, exc_obj, exc_tb = sys.exc_info()
