@@ -2,7 +2,6 @@
 
 import roslib
 import rospy
-import actionlib
 import tf
 
 import math
@@ -51,6 +50,15 @@ class HumanFollower:
 
 
     def callback(self, data):
+        # get transform
+        listener = ListenerSingleton.new()
+        (trans, rot) = listener.lookupTransform('/map', '/base_link', rospy.Time())
+        rospy.loginfo("Transform obtained")
+
+        # sends current position for visualization
+        self.sendCurrentPosition(trans, rot)
+
+        # process leg detector input
         if len(data.people) > 0:
             personIndex = self.findReliableTarget(data)
 
@@ -60,18 +68,14 @@ class HumanFollower:
                 
                 try:
 
-                    listener = ListenerSingleton.new()
-                    (trans, rot) = listener.lookupTransform('/map', '/base_link', rospy.Time())
-                    rospy.loginfo("Transform obtained")
-
-                    # sends current position for visualization
-                    self.sendCurrentPosition(trans, rot)
-
                     # logs the start of goal computation
                     rospy.loginfo("Computing goal")
 
                     # This is where the target person's legs are                                      
                     legPosition = data.people[personIndex].pos
+
+                    # setting last known position regardless of if the goal is sent or not
+                    self.lastKnownPosition = GoalEuler(legPosition.x, legPosition.y, angle)                    
 
                     # computing target point that is set distance away    
                     differenceX = legPosition.x - trans[0]
@@ -86,9 +90,7 @@ class HumanFollower:
                     goalX = target_length * math.cos(angle) + trans[0]
                     goalY = target_length * math.sin(angle) + trans[1]
 
-                    # setting last known position regardless of if the goal is sent or not
-                    self.lastKnownPosition = GoalEuler(goalX, goalY, angle)
-                    
+
                     # sending goal if it is sufficiently different
                     rospy.loginfo("judging goal")
                     if (self.previousGoal == None):
@@ -153,6 +155,7 @@ class HumanFollower:
         rospy.loginfo("Looking for suitible target")
 
         maxReliability = RELIABILITY_MIN
+        reliability = 0
         personIndex = -1
 
         for i in range(len(data.people)):
@@ -170,6 +173,7 @@ class HumanFollower:
                 else:
                     currPersonPosition = data.people[i].pos
 
+                    # check distance from last known position of last most reliable person
                     distFromLastKnownX = currPersonPosition.x - self.lastKnownPosition.x
                     distFromLastKnownY = currPersonPosition.y - self.lastKnownPosition.y
                     distFromLastKnown = math.hypot(distFromLastKnownX, distFromLastKnownY)
@@ -185,7 +189,6 @@ class HumanFollower:
 
         rospy.loginfo("count: " + str(len(data.people)))
         rospy.loginfo("final R: " + str(reliability))
-        rospy.loginfo("max R: " + str(maxReliability))
 
         return personIndex
 
