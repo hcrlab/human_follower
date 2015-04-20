@@ -75,7 +75,8 @@ class HumanFollower:
                     legPosition = data.people[personIndex].pos
 
                     # setting last known position regardless of if the goal is sent or not
-                    self.lastKnownPosition = GoalEuler(legPosition.x, legPosition.y, angle)                    
+                    # angle is not important. Last Known position only needs the coordinates
+                    self.lastKnownPosition = GoalEuler(legPosition.x, legPosition.y, 0)                    
 
                     # computing target point that is set distance away    
                     differenceX = legPosition.x - trans[0]
