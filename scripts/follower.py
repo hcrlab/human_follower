@@ -12,7 +12,8 @@ from geometry_msgs.msg import *
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 # constants
-DIST_FROM_PREVIOUS = .3 # how close is too close that robot won't send a new goal
+DIST_THRESHOLD = .3 # how close is too close that robot won't send a new goal
+ANGLE_THRESHOLD = math.pi / 6
 DIST_FROM_TARGET = .6 # how far away the robot should stop from the target
 PROXIMITY_MAX = .4 # how far from last known position leg detector should consider to be probable
 R_SCALE = .5
@@ -83,42 +84,28 @@ class HumanFollower:
                     differenceY = legPosition.y - trans[1]
                     
                     # calculating target location
-                    angle = math.atan2(differenceY, differenceX)
+                    goalAngle = math.atan2(differenceY, differenceX)
                     length = math.hypot(differenceX, differenceY)
                     
                     # calculating the position of the goal
                     target_length = length - DIST_FROM_TARGET
-                    goalX = target_length * math.cos(angle) + trans[0]
-                    goalY = target_length * math.sin(angle) + trans[1]
+                    goalX = target_length * math.cos(goalAngle) + trans[0]
+                    goalY = target_length * math.sin(goalAngle) + trans[1]
 
 
-                    # sending goal if it is sufficiently different
+                    # sending goal if it is sufficiently different or the first goal
                     rospy.loginfo("judging goal")
-                    if (self.previousGoal == None):
-                        rospy.loginfo("first goal woo hoo!")
+                    if (self.previousGoal == None or checkGoalDifference(goalX, goalY, goalAngle)):
 
-                        self.previousGoal = GoalEuler(goalX, goalY, angle)
+                        self.previousGoal = GoalEuler(goalX, goalY, goalAngle)
                         self.trackedObjectID = data.people[personIndex].object_id
 
-                        target_goal_simple = self.buildGoalQuaternion(goalX, goalY, angle) 
+                        target_goal_simple = self.buildGoalQuaternion(goalX, goalY, goalAngle) 
 
                         rospy.loginfo("sending goal")
                         self.pub.publish(target_goal_simple)
                     else:
-                        #calculating distance from previous goal
-                        distX = goalX - self.previousGoal.x
-                        distY = goalY - self.previousGoal.y
-                        dist = math.hypot(distX, distY)
-                        
-                        if (dist > DIST_FROM_PREVIOUS):
-                            self.previousGoal = GoalEuler(goalX, goalY, angle)
-
-                            target_goal_simple = self.buildGoalQuaternion(goalX, goalY, angle)
-
-                            rospy.loginfo("sending new goal")
-                            self.pub.publish(target_goal_simple)
-                        else:
-                            rospy.loginfo("new goal canceled: too close to current goal!")
+                        rospy.loginfo("new goal not sufficiently different. Canclled.")
                 
                 except Exception as expt:
                     #exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -128,10 +115,10 @@ class HumanFollower:
                     print expt.args
                 
 
-    def buildGoalQuaternion(self, goalX, goalY, angle):
+    def buildGoalQuaternion(self, goalX, goalY, goalAngle):
         rospy.loginfo("building final goal")
         # calculating the quaterion
-        quaternion = tf.transformations.quaternion_from_euler(0, 0, angle)
+        quaternion = tf.transformations.quaternion_from_euler(0, 0, goalAngle)
 
         # forming target goal
         goal = PoseStamped()
@@ -150,6 +137,12 @@ class HumanFollower:
 
         return goal
 
+    def checkGoalDifference(self, goalX, goalY, goalAngle):
+        # check if distance is far enough
+        distDiff = math.hypot(goalX - self.previousGoal.x, goalY - self.previousGoal.y)
+        angleDiff = math.fabs(goalAngle - self.previousGoal.goalAngle)
+        
+        return (distDiff > DIST_THRESHOLD or angleDiff > ANGLE_THRESHOLD)
             
     def findReliableTarget(self, data):
         # selecting most probable person
@@ -199,6 +192,7 @@ class HumanFollower:
         curr_Position.pose.position.x = trans[0]
         curr_Position.pose.position.y = trans[0]
         curr_Position.pose.position.z = 0
+        curr_Position.pose.orientation.x = rot[0]
         curr_Position.pose.orientation.y = rot[1]
         curr_Position.pose.orientation.z = rot[2]
         curr_Position.pose.orientation.w = rot[3]
