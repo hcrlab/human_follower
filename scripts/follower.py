@@ -142,11 +142,12 @@ class HumanFollower:
         distDiff = math.hypot(goalX - self.previousGoal.x, goalY - self.previousGoal.y)
         angleDiff = math.fabs(goalAngle - self.previousGoal.goalAngle)
         
+        # if either is greather than threshold, we should send new goal
         return (distDiff > DIST_THRESHOLD or angleDiff > ANGLE_THRESHOLD)
             
     def findReliableTarget(self, data):
         # selecting most probable person
-        rospy.loginfo("Looking for suitible target")
+        rospy.loginfo("Filtering for suitible target")
 
         maxReliability = RELIABILITY_MIN
         reliability = 0
