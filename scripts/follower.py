@@ -95,7 +95,7 @@ class HumanFollower:
 
                     # sending goal if it is sufficiently different or the first goal
                     rospy.loginfo("judging goal")
-                    if (self.previousGoal == None or checkGoalDifference(goalX, goalY, goalAngle)):
+                    if (self.previousGoal == None or self.checkGoalDifference(goalX, goalY, goalAngle)):
 
                         self.previousGoal = GoalEuler(goalX, goalY, goalAngle)
                         self.trackedObjectID = data.people[personIndex].object_id
@@ -140,7 +140,7 @@ class HumanFollower:
     def checkGoalDifference(self, goalX, goalY, goalAngle):
         # check if distance is far enough
         distDiff = math.hypot(goalX - self.previousGoal.x, goalY - self.previousGoal.y)
-        angleDiff = math.fabs(goalAngle - self.previousGoal.goalAngle)
+        angleDiff = math.fabs(goalAngle - self.previousGoal.angle)
         
         # if either is greather than threshold, we should send new goal
         return (distDiff > DIST_THRESHOLD or angleDiff > ANGLE_THRESHOLD)
