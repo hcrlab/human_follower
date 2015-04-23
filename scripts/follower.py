@@ -162,31 +162,27 @@ class HumanFollower:
             # if the same person is still in sight, it is the most reliable
             # If there is no previous goal, then it's simply the leg_detector reliability
 
-            currPersonPosition = data.people[i].pos
-
-            # check distance from last known position of last most reliable person
-            distFromLastKnownX = currPersonPosition.x - self.lastKnownPosition.x
-            distFromLastKnownY = currPersonPosition.y - self.lastKnownPosition.y
-            distFromLastKnown = math.hypot(distFromLastKnownX, distFromLastKnownY)
-
-
-            distFromRobot = math.hypot(currPersonPosition.x - roboPosition[0], currPersonPosition.y - roboPosition[1])
-            #istFromLastX = currPersonPosition.x - self.lastKnownPosition.x
-            #distFromLastY = currPersonPosition.y - self.lastKnownPosition.y
-            #distFromLastKnown = math.hypot(distFromLastX, distFromLastY)
+            currPersonPosition = data.people[i].pos            
 
             if (self.previousGoal == None):
-                reliability = data.people[i].reliability
-            elif (data.people[i].object_id == self.trackedObjectID):
-                reliability = 100
-            elif (distFromRobot > DIST_MAX):
-                reliability = -100
-            else:
-                # general case not the first goal
-                if (distFromLastKnown < PROXIMITY_MAX):
-                    reliability = data.people[i].reliability + ((PROXIMITY_MAX - distFromLastKnown) * R_SCALE)
+                reliability = currPersonPosition.reliability
+            else: 
+
+                distFromRobot = math.hypot(currPersonPosition.x - roboPosition[0], currPersonPosition.y - roboPosition[1])
+                distFromLastX = currPersonPosition.x - self.lastKnownPosition.x
+                distFromLastY = currPersonPosition.y - self.lastKnownPosition.y
+                distFromLastKnown = math.hypot(distFromLastX, distFromLastY)
+
+                if (data.people[i].object_id == self.trackedObjectID):
+                    reliability = 100
+                elif (distFromRobot > DIST_MAX):
+                    reliability = -100
                 else:
-                    reliability = data.people[i].reliability
+                    # general case not the first goal
+                    if (distFromLastKnown < PROXIMITY_MAX):
+                        reliability = data.people[i].reliability + ((PROXIMITY_MAX - distFromLastKnown) * R_SCALE)
+                    else:
+                        reliability = data.people[i].reliability
      
             if (reliability > maxReliability):
                 maxReliability = reliability
