@@ -165,7 +165,9 @@ class HumanFollower:
             currPersonPosition = data.people[i].pos
 
             distFromRobot = math.hypot(currPersonPosition.x - roboPosition[0], currPersonPosition.y - roboPosition[1])
-            distFromLastKnown = math.hypot(currPersonPosition.x - self.lastKnownPosition.x, currPersonPosition.y - self.lastKnownPosition.y)
+            distFromLastX = currPersonPosition.x - self.lastKnownPosition.x
+            distFromLastY = currPersonPosition.y - self.lastKnownPosition.y
+            distFromLastKnown = math.hypot(distFromLastX, distFromLastY)
 
             if (self.previousGoal == None):
                 reliability = data.people[i].reliability
