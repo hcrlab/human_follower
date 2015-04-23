@@ -165,7 +165,7 @@ class HumanFollower:
             currPersonPosition = data.people[i].pos            
 
             if (self.previousGoal == None):
-                reliability = currPersonPosition.reliability
+                reliability = data.people[i].reliability
             else: 
 
                 distFromRobot = math.hypot(currPersonPosition.x - roboPosition[0], currPersonPosition.y - roboPosition[1])
