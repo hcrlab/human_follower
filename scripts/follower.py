@@ -12,9 +12,10 @@ from geometry_msgs.msg import *
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 # constants
-DIST_THRESHOLD = .3 # how close is too close that robot won't send a new goal
-ANGLE_THRESHOLD = math.pi / 6
-DIST_FROM_TARGET = .6 # how far away the robot should stop from the target
+DIST_MIN = .3 # how close is too close that robot won't send a new goal
+DIST_MAX = 3 # how far is too far that robot should not consider it as new person
+ANGLE_THRESHOLD = math.pi / 6 # how wide is too wide robot will send new goal
+DIST_FROM_TARGET = .5 # how far away the robot should stop from the target
 PROXIMITY_MAX = .4 # how far from last known position leg detector should consider to be probable
 R_SCALE = .5
 RELIABILITY_MIN = .4 #minimum reliability of the position
@@ -61,7 +62,7 @@ class HumanFollower:
 
         # process leg detector input
         if len(data.people) > 0:
-            personIndex = self.findReliableTarget(data)
+            personIndex = self.findReliableTarget(data, trans)
 
             # found someone more probable than the min probability.
             if (personIndex != -1):
@@ -143,9 +144,10 @@ class HumanFollower:
         angleDiff = math.fabs(goalAngle - self.previousGoal.angle)
         
         # if either is greather than threshold, we should send new goal
-        return (distDiff > DIST_THRESHOLD or angleDiff > ANGLE_THRESHOLD)
+        return (distDiff > DIST_MIN
+     or angleDiff > ANGLE_THRESHOLD)
             
-    def findReliableTarget(self, data):
+    def findReliableTarget(self, data, roboPosition):
         # selecting most probable person
         rospy.loginfo("Filtering for suitible target")
 
@@ -159,25 +161,25 @@ class HumanFollower:
             # and how far this current goal is from the pervious goal.
             # if the same person is still in sight, it is the most reliable
             # If there is no previous goal, then it's simply the leg_detector reliability
-            
+
+            currPersonPosition = data.people[i].pos
+
+            distFromRobot = math.hypot(currPersonPosition.x - roboPosition[0], currPersonPosition.y - roboPosition[1])
+            distFromLastKnown = math.hypot(currPersonPosition.x - self.lastKnownPosition.x, currPersonPosition.y - self.lastKnownPosition.y)
+
             if (self.previousGoal == None):
                 reliability = data.people[i].reliability
+            elif (data.people[i].object_id == self.trackedObjectID):
+                reliability = 100
+            elif (distFromRobot > DIST_MAX):
+                reliability = -100
             else:
-                if (data.people[i].object_id == self.trackedObjectID):
-                    reliability = 100
+                # general case not the first goal
+                if (distFromLastKnown < PROXIMITY_MAX):
+                    reliability = data.people[i].reliability + ((PROXIMITY_MAX - distFromLastKnown) * R_SCALE)
                 else:
-                    currPersonPosition = data.people[i].pos
-
-                    # check distance from last known position of last most reliable person
-                    distFromLastKnownX = currPersonPosition.x - self.lastKnownPosition.x
-                    distFromLastKnownY = currPersonPosition.y - self.lastKnownPosition.y
-                    distFromLastKnown = math.hypot(distFromLastKnownX, distFromLastKnownY)
-
-                    if (distFromLastKnown < PROXIMITY_MAX):
-                        reliability = data.people[i].reliability + ((PROXIMITY_MAX - distFromLastKnown) * R_SCALE)
-                    else:
-                        reliability = data.people[i].reliability
-                    
+                    reliability = data.people[i].reliability
+     
             if (reliability > maxReliability):
                 maxReliability = reliability
                 personIndex = i
