@@ -1,14 +1,5 @@
 #!/usr/bin/env python
 
-import sys
-import time
-import os
-import roslib
-import rospy
-
-from people_msgs.msg import PositionMeasurementArray
-from geometry_msgs.msg import *
-
 '''
 Testing reliability of leg detector
 
@@ -32,11 +23,39 @@ use wait for message!
 
 '''
 
+import sys
+import time
+import os
+import roslib
+import rospy
+
+from people_msgs.msg import PositionMeasurementArray
+from geometry_msgs.msg import *
+
+## Constants
+# Argument types
+FILE_ARG = 		"-f"
+QUIET_ARG = 	"-q"
+HELP_ARG = 		"-h"
+SIMPLE_ARG =	"-s"
+COMPLEX_ARG =	"-c"
+DIST_ARG =		"-d"
+
+## Global variables
+LOG_FILE_NAME = "quiet_mode"
+LOG_FILE_HANDLE = None
+DIST = 0;
+
 
 def timer():
 	running = True
 	counting = False
 	countedTime = 0.0
+
+	print "press enter to start experiment. Timer not started automatically"
+	raw_input(">")
+
+	# start timer
 	startTime = time.time()
 	endTime = time.time()
 	lastStamp = time.time()
@@ -49,7 +68,7 @@ def timer():
 				# stop time
 				countedTime += (endTime - lastStamp)
 			
-			print "stopped, total at: " + str(countedTime) + " / " + str(endTime-startTime)
+			log("stopped, total at: " + str(countedTime) + " / " + str(endTime-startTime))
 			running = False
 		else:
 			counting = not counting
@@ -58,35 +77,140 @@ def timer():
 			if (counting == False):
 				# updating time
 				countedTime += (time.time() - lastStamp)
-				print "paused, total at: " + str(countedTime) + " / " + str(time.time()-startTime)
+				log("paused, total at: " + str(countedTime) + " / " + str(time.time()-startTime))
 			else:
-				print "continue from: " + str(countedTime) + " / " + str(time.time()-startTime)
+				log("continue from: " + str(countedTime) + " / " + str(time.time()-startTime))
 
 				lastStamp = time.time()
 	# outside of loop
-	print "total: " + str(countedTime) + "/" + str(endTime - startTime)
+	log("total: " + str(countedTime) + "/" + str(endTime - startTime))
 	return (countedTime, endTime-startTime)
 
-def generateFileName(ex_type, dist = 0):
+def generateFileName(ex_type):
 	''' generates the file name for this experiment
 	    based on the type and the time
 	'''
-	filename = str(ex_type) + "_" + str(dist) + "_" + str(int(time.time())) + ".txt"
+	filename = str(ex_type) + "_" + str(DIST) + "_" + str(int(time.time()))
 	return filename
-        
+
+
+def log(message):
+	'''	logs the message to either stdout and file based on LOG_FILE_HANDLE
+		If handle is None, file logging is disapled
+	'''
+	# print to stdout
+	print message
+
+	#print to logfile
+	if (LOG_FILE_HANDLE != None):
+		print >> LOG_FILE_HANDLE, message
+	
+
+def checkValidArguments(args):
+	if (not((COMPLEX_ARG in args) ^ (SIMPLE_ARG in args))):
+		# not xor
+		print "invalid syntax! please use -s or -c. Use -h for help"
+		return False
+
+	return True
+
+
+'''
+argument lists
+
+-h 			: prints help menu
+
+-s / -c 	: simple or complex environment
+-d 			: specifies the distance
+-q 			: does not log file. only print to output
+
+-f filename : specifies the file to output the data to
+			  default is just generated with time and mode
+'''
+def printHelp():
+	# prints function of program
+	print "Small systematic tester written for Paul's human_follower project"
+	print "I should put more things in here but eh"
+	print "\n"
+
+	# prints out the argument lists
+	print HELP_ARG + "\t\t\tprints help menu"
+	print ""
+
+	print SIMPLE_ARG + "\t\t\ttest is in simple environment"
+	print "\t\t\tcannot be used with " + COMPLEX_ARG
+	print ""
+
+	print COMPLEX_ARG + "\t\t\ttest is in complex environment"
+	print "\t\t\tcannot be used with " + SIMPLE_ARG
+	print ""
+
+	print DIST_ARG + " distance" "\t\ttest performed at this distance away"
+	print ""
+
+	print FILE_ARG + " filename" + "\t\tspecifies log file"
+	print ""
+
+	print QUIET_ARG + "\t\t\tdoes not print to log file"
+	print ""
+
 
 if __name__ == '__main__':
 	if (len(sys.argv) < 2):
-		print "usage: " + sys.argv[0] + " [env type: -s/-c] [optional: dist]"
+		print "missing arguments! run '" + sys.argv[0] + " -h' for arguments"
+		quit()
 
-	else:
-		if (sys.argv[1] == "-s"):
-			print "running tests in a simple environment"
-			print generateFileName("s")
-		elif (sys.argv[1] == "-c"):
-			print "running tests in a complex environment"
-			print generateFileName("c")
+	args = dict()
+	# build dictionary where key is the argument, value is the position
+	# argument must start with -
+	for i in range(len(sys.argv)):
+		if (sys.argv[i].startswith("-")):
+			args[sys.argv[i]] = i
+
+	# check for help argument
+	if (HELP_ARG in args):
+		# display help options
+		printHelp()
+		quit()	
+
+	# test for conflicting arguments
+	if (not checkValidArguments(args)):
+		# bad arguments should be printed inside the function
+		quit()
+
+	# check for arguments
+
+	if (DIST_ARG in args):
+		DIST = int(sys.argv[args[DIST_ARG] + 1])
+
+
+	if (QUIET_ARG not in args):
+		# we want a log file
+		if (FILE_ARG in args):
+			# specify output file
+			LOG_FILE_NAME = sys.argv[args[FILE_ARG] + 1]
 		else:
-			print "invalid environment parameter. Use either '-s' or '-c' "
+			if (COMPLEX_ARG in args):
+				LOG_FILE_NAME = generateFileName("C")
+			else:
+				LOG_FILE_NAME = generateFileName("S")
+
+		# open log file		
+		LOG_FILE_HANDLE = open("./" + LOG_FILE_NAME, 'a')
+	else:
+		print "running quietly"	
+
+	### Start tester ###
+
+	log("")
+	if (COMPLEX_ARG in args):
+		log("Experiment " + generateFileName("C"))
+	else:
+		log("Experiment " + generateFileName("S"))
+
+	# start timer
 	timer()
-    
+	
+	# close log file
+	if (QUIET_ARG not in args):
+		LOG_FILE_HANDLE.close()
