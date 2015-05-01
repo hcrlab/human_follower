@@ -17,7 +17,7 @@ DIST_MAX = 3 # how far is too far that robot should not consider it as new perso
 ANGLE_THRESHOLD = math.pi / 6 # how wide is too wide robot will send new goal
 DIST_FROM_TARGET = .5 # how far away the robot should stop from the target
 PROXIMITY_MAX = .4 # how far from last known position leg detector should consider to be probable
-R_SCALE = .5
+R_SCALE = .5 # scale from distance to reliability
 RELIABILITY_MIN = .4 #minimum reliability of the position
 
 class ListenerSingleton:
@@ -144,8 +144,7 @@ class HumanFollower:
         angleDiff = math.fabs(goalAngle - self.previousGoal.angle)
         
         # if either is greather than threshold, we should send new goal
-        return (distDiff > DIST_MIN
-     or angleDiff > ANGLE_THRESHOLD)
+        return (distDiff > DIST_MIN or angleDiff > ANGLE_THRESHOLD)
             
     def findReliableTarget(self, data, roboPosition):
         # selecting most probable person
