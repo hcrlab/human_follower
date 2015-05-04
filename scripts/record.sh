@@ -1,0 +1,1 @@
+rosbag record tf scan visualization_marker people_tracker_measurements camera/depth_registered/image_raw camera/depth_registered/camera_info camera/rgb/image_raw camera/rgb/camera_info
