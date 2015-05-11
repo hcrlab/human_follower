@@ -35,16 +35,22 @@ from geometry_msgs.msg import *
 ## Constants
 # Argument types
 FILE_ARG = 		"-f"
+DIST_ARG =		"-d"
 QUIET_ARG = 	"-q"
 HELP_ARG = 		"-h"
 SIMPLE_ARG =	"-s"
 COMPLEX_ARG =	"-c"
-DIST_ARG =		"-d"
+STILL_ARG = 	"-n"  # not moving?
+MOVE_ARG = 		"-m"
 
 ## Global variables
 LOG_FILE_NAME = "quiet_mode"
 LOG_FILE_HANDLE = None
+ENV = "S"
 DIST = 0;
+MODE = "STILL"
+MOVEMENT = "NONE"
+
 
 
 def timer():
@@ -59,6 +65,9 @@ def timer():
 	startTime = time.time()
 	endTime = time.time()
 	lastStamp = time.time()
+
+	# print start message
+	print "Timer started!"
 
 	while (running):
 		input = str(raw_input(">"))
@@ -86,11 +95,11 @@ def timer():
 	log("total: " + str(countedTime) + "/" + str(endTime - startTime))
 	return (countedTime, endTime-startTime)
 
-def generateFileName(ex_type):
+def generateFileName():
 	''' generates the file name for this experiment
 	    based on the type and the time
 	'''
-	filename = str(ex_type) + "_" + str(DIST) + "_" + str(int(time.time()))
+	filename = str(ENV) + "_" + str(MODE) + "_" + str(DIST) + "_" + str(MOVEMENT) + "_" + str(int(time.time()))
 	return filename
 
 
@@ -112,6 +121,11 @@ def checkValidArguments(args):
 		print "invalid syntax! please use -s or -c. Use -h for help"
 		return False
 
+	if (not((STILL_ARG in args) ^ (MOVE_ARG in args))):
+		# not xor
+		print "invalid syntax! please use -m or -n. Use -h for help"
+		return False
+
 	return True
 
 
@@ -123,6 +137,9 @@ argument lists
 -s / -c 	: simple or complex environment
 -d 			: specifies the distance
 -q 			: does not log file. only print to output
+
+-m / -n 	: move or not moving.
+			  move should have additional input to say what kind of motion
 
 -f filename : specifies the file to output the data to
 			  default is just generated with time and mode
@@ -145,6 +162,14 @@ def printHelp():
 	print "\t\t\tcannot be used with " + SIMPLE_ARG
 	print ""
 
+	print STILL_ARG + "\t\t\ttest subject stands still"
+	print "\t\t\tcannot be used with " + MOVE_ARG
+	print ""
+
+	print MOVE_ARG + " motion\t\ttest subject moves"
+	print "\t\t\tcannot be used with " + STILL_ARG
+	print ""
+
 	print DIST_ARG + " distance" "\t\ttest performed at this distance away"
 	print ""
 
@@ -153,6 +178,8 @@ def printHelp():
 
 	print QUIET_ARG + "\t\t\tdoes not print to log file"
 	print ""
+
+
 
 
 if __name__ == '__main__':
@@ -191,22 +218,29 @@ if __name__ == '__main__':
 			LOG_FILE_NAME = sys.argv[args[FILE_ARG] + 1]
 		else:
 			if (COMPLEX_ARG in args):
-				LOG_FILE_NAME = generateFileName("C")
+				ENV = "C"
 			else:
-				LOG_FILE_NAME = generateFileName("S")
+				ENV = "S"
 
 		# open log file		
 		LOG_FILE_HANDLE = open("./" + LOG_FILE_NAME, 'a')
 	else:
 		print "running quietly"	
 
+	if ((MOVE_ARG in args)):
+		MODE = "MOVE"
+		if(sys.argv[args[MOVE_ARG] + 1].startswith("-")):
+			# movement started with -, which is not okay!
+			print "Did not specify movement!"
+			quit()
+		else:
+			MOVEMENT = sys.argv[args[MOVE_ARG] + 1]
+
+
 	### Start tester ###
 
 	log("")
-	if (COMPLEX_ARG in args):
-		log("Experiment " + generateFileName("C"))
-	else:
-		log("Experiment " + generateFileName("S"))
+	log ("Experiment " + generateFileName())
 
 	# start timer
 	timer()
