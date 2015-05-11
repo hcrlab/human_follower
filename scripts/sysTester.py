@@ -100,7 +100,7 @@ def generateFileName():
 	''' generates the file name for this experiment
 	    based on the type and the time
 	'''
-	filename = str(ENV) + "_" + str(MODE) + "_" + str(DIST) + "_" + str(MOVEMENT) + "_" + str(int(time.time())) + "_" + str(MSG)
+	filename = str(ENV) + "_" + str(MODE) + "_" + str(DIST) + "_" + str(MOVEMENT) + "_" + str(int(time.time())) + str(MSG)
 	return filename
 
 
@@ -239,7 +239,7 @@ if __name__ == '__main__':
 			MOVEMENT = sys.argv[args[MOVE_ARG] + 1]
 
 	if (MSG_ARG in args):
-		MSG = sys.argv[args[MSG_ARG] + 1]
+		MSG = "_" + sys.argv[args[MSG_ARG] + 1]
 
 
 	### Start tester ###
