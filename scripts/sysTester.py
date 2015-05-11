@@ -42,6 +42,7 @@ SIMPLE_ARG =	"-s"
 COMPLEX_ARG =	"-c"
 STILL_ARG = 	"-n"  # not moving?
 MOVE_ARG = 		"-m"
+MSG_ARG = 		"-z"
 
 ## Global variables
 LOG_FILE_NAME = "quiet_mode"
@@ -50,7 +51,7 @@ ENV = "S"
 DIST = 0;
 MODE = "STILL"
 MOVEMENT = "NONE"
-
+MSG = ""
 
 
 def timer():
@@ -99,7 +100,7 @@ def generateFileName():
 	''' generates the file name for this experiment
 	    based on the type and the time
 	'''
-	filename = str(ENV) + "_" + str(MODE) + "_" + str(DIST) + "_" + str(MOVEMENT) + "_" + str(int(time.time()))
+	filename = str(ENV) + "_" + str(MODE) + "_" + str(DIST) + "_" + str(MOVEMENT) + "_" + str(int(time.time())) + "_" + str(MSG)
 	return filename
 
 
@@ -235,6 +236,9 @@ if __name__ == '__main__':
 			quit()
 		else:
 			MOVEMENT = sys.argv[args[MOVE_ARG] + 1]
+
+	if (MSG_ARG in args):
+		MSG = sys.argv[args[MSG_ARG] + 1]
 
 
 	### Start tester ###
