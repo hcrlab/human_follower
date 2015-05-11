@@ -222,6 +222,7 @@ if __name__ == '__main__':
 				ENV = "C"
 			else:
 				ENV = "S"
+			LOG_FILE_NAME = generateFileName()
 
 		# open log file		
 		LOG_FILE_HANDLE = open("./" + LOG_FILE_NAME, 'a')
