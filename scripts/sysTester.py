@@ -21,6 +21,18 @@ When does Human Follower code set wrong goal (if person is showing)?
 
 use wait for message!
 
+OBSERVATIONS:
+
+detector takes around .7 seconds recognize a person. 
+Once it recognzies a person, it rarely flickers (happened 2 times in all the records)
+Does not easily lose the person as long as the person doesn't leave view
+
+focus: try to make sure the robot does not lose the person 
+
+should try:
+	how easy is it to flicker when the robot is moving?
+	
+
 '''
 
 import sys
