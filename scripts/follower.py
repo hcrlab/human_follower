@@ -43,10 +43,9 @@ class GoalEuler:
 class HumanFollower:
 
     def __init__(self):
-        self.pub = rospy.Publisher("move_base_simple/goal", PoseStamped, queue_size = 10)
+        self.pub = rospy.Publisher("cmd_vel", Twist, queue_size = 10)
         self.positionPub = rospy.Publisher("currentPosition", PoseStamped, queue_size = 10)
 
-        self.previousGoal = None
         self.lastKnownPosition = None
         self.trackedObjectID = "Steve"
 
@@ -93,21 +92,16 @@ class HumanFollower:
                     goalX = target_length * math.cos(goalAngle) + trans[0]
                     goalY = target_length * math.sin(goalAngle) + trans[1]
 
+                    # publish computed goal
+                    (xErr, yErr, angleErr) = getError(goalX, goalY, goalAngle, trans, rot)
 
-                    # sending goal if it is sufficiently different or the first goal
-                    rospy.loginfo("judging goal")
-                    if (self.previousGoal == None or self.checkGoalDifference(goalX, goalY, goalAngle)):
+                    ## make twist messages
+                    cmd = Twist()
+                    cmd.linear.x = math.hypot(xErr, yErr)
+                    cmd.angular.z = angleErr
 
-                        self.previousGoal = GoalEuler(goalX, goalY, goalAngle)
-                        self.trackedObjectID = data.people[personIndex].object_id
+                    self.pub.publish(cmd)
 
-                        target_goal_simple = self.buildGoalQuaternion(goalX, goalY, goalAngle) 
-
-                        rospy.loginfo("sending goal")
-                        self.pub.publish(target_goal_simple)
-                    else:
-                        rospy.loginfo("new goal not sufficiently different. Canclled.")
-                
                 except Exception as expt:
                     #exc_type, exc_obj, exc_tb = sys.exc_info()
                     #fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -116,35 +110,24 @@ class HumanFollower:
                     print expt.args
                 
 
-    def buildGoalQuaternion(self, goalX, goalY, goalAngle):
-        rospy.loginfo("building final goal")
-        # calculating the quaterion
-        quaternion = tf.transformations.quaternion_from_euler(0, 0, goalAngle)
+    def getError(goaX, goalY, angle, trans, rot):
+        # calculates the error in angle between current pose and goal vector
+        # assumes inputs in the same frame
+        self_quaternion = Quarterion()
 
-        # forming target goal
-        goal = PoseStamped()
-        
-        goal.pose.position.x = goalX
-        goal.pose.position.y = goalY
-        goal.pose.position.z = 0
-        
-        goal.pose.orientation.x = quaternion[0]
-        goal.pose.orientation.y = quaternion[1]
-        goal.pose.orientation.z = quaternion[2]
-        goal.pose.orientation.w = quaternion[3]
+        self_quaternion.x = rot[0]
+        self_quaternion.y = rot[1]
+        self_quaternion.z = rot[2]
+        self_quaternion.w = rot[3]
 
-        goal.header.frame_id = 'map'
-        goal.header.stamp = rospy.Time.now()
+        self_angles = tf.transformations.euler_from_quaternion(self_quaternion)
 
-        return goal
+        angleErr = angle - self_angles[2]
+        xErr = goalX - trans[0]
+        yErr = goalY - trans[1]
 
-    def checkGoalDifference(self, goalX, goalY, goalAngle):
-        # check if distance is far enough
-        distDiff = math.hypot(goalX - self.previousGoal.x, goalY - self.previousGoal.y)
-        angleDiff = math.fabs(goalAngle - self.previousGoal.angle)
-        
-        # if either is greather than threshold, we should send new goal
-        return (distDiff > DIST_MIN or angleDiff > ANGLE_THRESHOLD)
+        return (xErr, yErr, angleErr)
+
             
     def findReliableTarget(self, data, roboPosition):
         # selecting most probable person
