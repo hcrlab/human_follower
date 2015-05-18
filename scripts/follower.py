@@ -144,27 +144,25 @@ class HumanFollower:
             # if the same person is still in sight, it is the most reliable
             # If there is no previous goal, then it's simply the leg_detector reliability
 
-            currPersonPosition = data.people[i].pos            
+            currPersonPosition = data.people[i].pos
+            distFromRobot = math.hypot(currPersonPosition.x - roboPosition[0], currPersonPosition.y - roboPosition[1])
 
-            if (self.previousGoal == None):
-                reliability = data.people[i].reliability
-            else: 
-
-                distFromRobot = math.hypot(currPersonPosition.x - roboPosition[0], currPersonPosition.y - roboPosition[1])
+            if (data.people[i].object_id == self.trackedObjectID):
+                reliability = 100
+            elif (distFromRobot > DIST_MAX):
+                reliability = -100
+            elif (self.lastKnownPosition != None):
                 distFromLastX = currPersonPosition.x - self.lastKnownPosition.x
                 distFromLastY = currPersonPosition.y - self.lastKnownPosition.y
                 distFromLastKnown = math.hypot(distFromLastX, distFromLastY)
 
-                if (data.people[i].object_id == self.trackedObjectID):
-                    reliability = 100
-                elif (distFromRobot > DIST_MAX):
-                    reliability = -100
+                # general case not the first goal
+                if (distFromLastKnown < PROXIMITY_MAX):
+                    reliability = data.people[i].reliability + ((PROXIMITY_MAX - distFromLastKnown) * R_SCALE)
                 else:
-                    # general case not the first goal
-                    if (distFromLastKnown < PROXIMITY_MAX):
-                        reliability = data.people[i].reliability + ((PROXIMITY_MAX - distFromLastKnown) * R_SCALE)
-                    else:
-                        reliability = data.people[i].reliability
+                    reliability = data.people[i].reliability
+            else:
+                reliability = data.people[i].reliability
      
             if (reliability > maxReliability):
                 maxReliability = reliability
