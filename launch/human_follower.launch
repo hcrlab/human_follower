@@ -1,0 +1,4 @@
+<launch>
+<include file="$(find human_follower)/launch/turtlebot_leg_detector.launch"/>
+<include file="$(find human_follower)/launch/gmapping_demo.launch"/>
+</launch>
