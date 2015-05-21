@@ -22,7 +22,7 @@ RELIABILITY_MIN = .4 #minimum reliability of the position
 
 ## driving constants
 DIST_FROM_TARGET = .5 # how far away the robot should stop from the target
-MAX_SPEED = 0.2.5 # max linear speed
+MAX_SPEED = 0.25 # max linear speed
 SPEED_STEP = 0.02 # max speed increase allowed 
 
 class ListenerSingleton:
