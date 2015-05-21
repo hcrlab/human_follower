@@ -12,13 +12,17 @@ from geometry_msgs.msg import *
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 # constants
+## detection constants
 DIST_MIN = .3 # how close is too close that robot won't send a new goal
 DIST_MAX = 3 # how far is too far that robot should not consider it as new person
 ANGLE_THRESHOLD = math.pi / 6 # how wide is too wide robot will send new goal
-DIST_FROM_TARGET = .5 # how far away the robot should stop from the target
 PROXIMITY_MAX = .4 # how far from last known position leg detector should consider to be probable
 R_SCALE = .5 # scale from distance to reliability
 RELIABILITY_MIN = .4 #minimum reliability of the position
+
+## driving constants
+DIST_FROM_TARGET = .5 # how far away the robot should stop from the target
+MAX_SPEED = 0.5 # max linear speed
 
 class ListenerSingleton:
     created = False
@@ -97,7 +101,7 @@ class HumanFollower:
 
                     ## make twist messages
                     cmd = Twist()
-                    cmd.linear.x = math.hypot(xErr, yErr)
+                    cmd.linear.x = math.min(math.hypot(xErr, yErr), MAX_SPEED)
                     cmd.angular.z = angleErr
 
                     rospy.loginfo("sending twist message")
