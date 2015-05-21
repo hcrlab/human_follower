@@ -100,8 +100,8 @@ class HumanFollower:
 
                     # publish computed goal
                     (xErr, yErr, angleErr) = self.getError(goalX, goalY, goalAngle, trans, rot)
-                    speed = min(min(math.hypot(xErr, yErr), MAX_SPEED), self.speed + SPEED_STEP)
-                    self.speed = speed
+                    speed = min(min(math.hypot(xErr, yErr), MAX_SPEED), self.linearSpeed + SPEED_STEP)
+                    self.linearSpeed = speed
 
                     ## make twist messages
                     cmd = Twist()
