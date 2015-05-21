@@ -93,7 +93,7 @@ class HumanFollower:
                     goalY = target_length * math.sin(goalAngle) + trans[1]
 
                     # publish computed goal
-                    (xErr, yErr, angleErr) = getError(goalX, goalY, goalAngle, trans, rot)
+                    (xErr, yErr, angleErr) = self.getError(goalX, goalY, goalAngle, trans, rot)
 
                     ## make twist messages
                     cmd = Twist()
@@ -122,7 +122,7 @@ class HumanFollower:
 
         self_angles = tf.transformations.euler_from_quaternion(self_quaternion)
 
-        angleErr = angle - self_angles[2]
+        angleErr = angle - self_angles[2] # rotation around z axis
         xErr = goalX - trans[0]
         yErr = goalY - trans[1]
 
