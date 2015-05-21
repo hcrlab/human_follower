@@ -22,7 +22,8 @@ RELIABILITY_MIN = .4 #minimum reliability of the position
 
 ## driving constants
 DIST_FROM_TARGET = .5 # how far away the robot should stop from the target
-MAX_SPEED = 0.5 # max linear speed
+MAX_SPEED = 0.2.5 # max linear speed
+SPEED_STEP = 0.02 # max speed increase allowed 
 
 class ListenerSingleton:
     created = False
@@ -50,6 +51,7 @@ class HumanFollower:
         self.pub = rospy.Publisher("cmd_vel_mux/input/teleop", Twist, queue_size = 10)
         self.positionPub = rospy.Publisher("currentPosition", PoseStamped, queue_size = 10)
 
+        self.linearSpeed = 0
         self.lastKnownPosition = None
         self.trackedObjectID = "Steve"
 
@@ -98,10 +100,12 @@ class HumanFollower:
 
                     # publish computed goal
                     (xErr, yErr, angleErr) = self.getError(goalX, goalY, goalAngle, trans, rot)
+                    speed = min(min(math.hypot(xErr, yErr), MAX_SPEED), self.speed + SPEED_STEP)
+                    self.speed = speed
 
                     ## make twist messages
                     cmd = Twist()
-                    cmd.linear.x = min(math.hypot(xErr, yErr), MAX_SPEED)
+                    cmd.linear.x = speed
                     cmd.angular.z = angleErr
 
                     rospy.loginfo("sending twist message")
