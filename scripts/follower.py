@@ -101,7 +101,7 @@ class HumanFollower:
 
                     ## make twist messages
                     cmd = Twist()
-                    cmd.linear.x = math.min(math.hypot(xErr, yErr), MAX_SPEED)
+                    cmd.linear.x = min(math.hypot(xErr, yErr), MAX_SPEED)
                     cmd.angular.z = angleErr
 
                     rospy.loginfo("sending twist message")
