@@ -43,7 +43,7 @@ class GoalEuler:
 class HumanFollower:
 
     def __init__(self):
-        self.pub = rospy.Publisher("cmd_vel", Twist, queue_size = 10)
+        self.pub = rospy.Publisher("cmd_vel_mux/input/teleop", Twist, queue_size = 10)
         self.positionPub = rospy.Publisher("currentPosition", PoseStamped, queue_size = 10)
 
         self.lastKnownPosition = None
@@ -100,6 +100,9 @@ class HumanFollower:
                     cmd.linear.x = math.hypot(xErr, yErr)
                     cmd.angular.z = angleErr
 
+                    rospy.loginfo("sending twist message")
+                    rospy.loginfo("linear x:" + str(cmd.linear.x))
+                    rospy.loginfo("angular z:" + str(cmd.angular.z))
                     self.pub.publish(cmd)
 
                 except Exception as expt:
@@ -110,17 +113,12 @@ class HumanFollower:
                     print expt.args
                 
 
-    def getError(goaX, goalY, angle, trans, rot):
+    def getError(self, goalX, goalY, angle, trans, rot):
         # calculates the error in angle between current pose and goal vector
         # assumes inputs in the same frame
-        self_quaternion = Quarterion()
 
-        self_quaternion.x = rot[0]
-        self_quaternion.y = rot[1]
-        self_quaternion.z = rot[2]
-        self_quaternion.w = rot[3]
-
-        self_angles = tf.transformations.euler_from_quaternion(self_quaternion)
+        q = (rot[0], rot[1], rot[2], rot[3])
+        self_angles = tf.transformations.euler_from_quaternion(q)
 
         angleErr = angle - self_angles[2] # rotation around z axis
         xErr = goalX - trans[0]
