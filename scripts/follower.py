@@ -97,18 +97,23 @@ class HumanFollower:
                     (xErr, yErr, angleErr) = self.getError(differenceX, differenceY, goalAngle, trans, rot)
                     distErr = max(math.hypot(xErr, yErr) - DIST_FROM_TARGET, 0)
                     speed = min(distErr, MAX_SPEED, self.linearSpeed + SPEED_STEP)
-                    self.linearSpeed = speed
 
                     ## make twist messages
                     cmd = Twist()
                     cmd.linear.x = speed
                     cmd.angular.z = angleErr
 
-                    rospy.loginfo("sending twist message")
+                    # sending message and printing logs. 
+                    rospy.loginfo("sending twist message\n")
+
+                    rospy.loginfo("distErr: " + str(distErr) + " previous speed: " + str(self.linearSpeed))
                     rospy.loginfo("linear x:" + str(cmd.linear.x))
                     rospy.loginfo("angular z:" + str(cmd.angular.z))
+
                     self.pub.publish(cmd)
+
                     sentGoal = True;
+                    self.linearSpeed = speed
 
                 except Exception as expt:
                     #exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -125,6 +130,9 @@ class HumanFollower:
             cmd.linear.x = self.linearSpeed
             cmd.angular.z = 0
             self.pub.publish(cmd)
+
+    # log empty line at the end to distingush cycles
+    rospy.loginfo("") 
 
     def getError(self, goalX, goalY, angle, trans, rot):
         # calculates the error in angle between current pose and goal vector
