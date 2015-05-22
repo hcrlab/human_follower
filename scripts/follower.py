@@ -122,7 +122,7 @@ class HumanFollower:
                     #print type(expt)
                     print expt.args
         
-        if (!sentGoal):
+        if (not sentGoal):
             # no new goal sent. slow down
             self.linearSpeed = max(0, self.linearSpeed - SPEED_STEP)
             
