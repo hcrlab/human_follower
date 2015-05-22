@@ -22,7 +22,7 @@ RELIABILITY_MIN = .4 #minimum reliability of the position
 
 ## driving constants
 DIST_FROM_TARGET = .5 # how far away the robot should stop from the target
-MAX_SPEED = 0.25 # max linear speed
+MAX_SPEED = 0.35 # max linear speed
 SPEED_STEP = 0.02 # max speed increase allowed 
 
 class ListenerSingleton:
@@ -64,6 +64,7 @@ class HumanFollower:
 
         # sends current position for visualization
         self.sendCurrentPosition(trans, rot)
+        sentGoal = False;
 
         # process leg detector input
         if len(data.people) > 0:
@@ -112,6 +113,7 @@ class HumanFollower:
                     rospy.loginfo("linear x:" + str(cmd.linear.x))
                     rospy.loginfo("angular z:" + str(cmd.angular.z))
                     self.pub.publish(cmd)
+                    sentGoal = True;
 
                 except Exception as expt:
                     #exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -119,7 +121,15 @@ class HumanFollower:
                     #print(exc_type, fname, exc_tb.tb_lineno)
                     #print type(expt)
                     print expt.args
-                
+        
+        if (!sentGoal):
+            # no new goal sent. slow down
+            self.linearSpeed = max(0, self.linearSpeed - SPEED_STEP)
+            
+            cmd = Twist()
+            cmd.linear.x = self.linearSpeed
+            cmd.angular.z = 0
+            self.pub.publish(cmd)
 
     def getError(self, goalX, goalY, angle, trans, rot):
         # calculates the error in angle between current pose and goal vector
