@@ -92,16 +92,11 @@ class HumanFollower:
                     
                     # calculating target location
                     goalAngle = math.atan2(differenceY, differenceX)
-                    length = math.hypot(differenceX, differenceY)
-                    
-                    # calculating the position of the goal
-                    target_length = length - DIST_FROM_TARGET
-                    goalX = target_length * math.cos(goalAngle) + trans[0]
-                    goalY = target_length * math.sin(goalAngle) + trans[1]
 
                     # publish computed goal
-                    (xErr, yErr, angleErr) = self.getError(goalX, goalY, goalAngle, trans, rot)
-                    speed = min(min(math.hypot(xErr, yErr), MAX_SPEED), self.linearSpeed + SPEED_STEP)
+                    (xErr, yErr, angleErr) = self.getError(differenceX, differenceY, goalAngle, trans, rot)
+                    distErr = max(math.hypot(xErr, yErr) - DIST_FROM_TARGET, 0)
+                    speed = min(distErr, MAX_SPEED, self.linearSpeed + SPEED_STEP)
                     self.linearSpeed = speed
 
                     ## make twist messages
@@ -124,7 +119,7 @@ class HumanFollower:
         
         if (not sentGoal):
             # no new goal sent. slow down
-            self.linearSpeed = max(0, self.linearSpeed - SPEED_STEP)
+            self.linearSpeed = max(self.linearSpeed - SPEED_STEP, 0)
             
             cmd = Twist()
             cmd.linear.x = self.linearSpeed
