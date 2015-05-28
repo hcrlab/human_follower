@@ -148,7 +148,7 @@ class HumanFollower:
         self_angles = tf.transformations.euler_from_quaternion(q)
 
         angleErr = goalAngle - self_angles[2] # rotation around z axis
-        distErr = math.hypot(diffX, diffY) - DIST_FROM_TARGET
+        distErr = math.hypot(differenceX, differenceY) - DIST_FROM_TARGET
 
         return (distErr, angleErr)
 
