@@ -22,9 +22,9 @@ RELIABILITY_MIN = .4 #minimum reliability of the position
 
 ## driving constants
 DIST_FROM_TARGET = .7 # how far away the robot should stop from the target
-MAX_SPEED = 0.4 # max linear speed
-MAX_ANGLE = 0.5 # max angular speed
-ANGULAR_SCALE = 3 # scale from angle difference in radians to twist velocity
+MAX_SPEED = 0.5 # max linear speed
+MAX_ANGLE = 1 # max angular speed
+ANGULAR_SCALE = 8 # scale from angle difference in radians to twist velocity
 SPEED_STEP = 0.02 # max speed increase allowed 
 
 class ListenerSingleton:
@@ -91,7 +91,7 @@ class HumanFollower:
                     # compute linear and angular speed
                     (distErr, angleErr) = self.getError(legPosition, trans, rot)
                     speed = min(distErr, MAX_SPEED, self.linearSpeed + SPEED_STEP)
-                    angle = min(angleErr * ANGLULAR_SCALE, MAX_ANGLE)
+                    angle = min(angleErr * ANGULAR_SCALE, MAX_ANGLE)
 
                     ## make twist messages
                     cmd = Twist()
