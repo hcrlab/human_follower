@@ -97,13 +97,13 @@ class HumanFollower:
                     cmd.linear.x = speed
                     cmd.angular.z = angleErr
 
-                    # sending message and printing logs. 
-                    rospy.loginfo("sending twist message\n")
+                    # sending message and printing logs.
 
                     rospy.loginfo("distErr: " + str(distErr) + " previous speed: " + str(self.linearSpeed))
                     rospy.loginfo("linear x:" + str(cmd.linear.x))
                     rospy.loginfo("angular z:" + str(cmd.angular.z))
 
+                    rospy.loginfo("sending twist message")
                     self.pub.publish(cmd)
 
                     sentGoal = True;
