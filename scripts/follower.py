@@ -23,6 +23,7 @@ RELIABILITY_MIN = .4 #minimum reliability of the position
 ## driving constants
 DIST_FROM_TARGET = .5 # how far away the robot should stop from the target
 MAX_SPEED = 0.35 # max linear speed
+MAX_ANGLE = 0.2 # max angular speed
 SPEED_STEP = 0.02 # max speed increase allowed 
 
 class ListenerSingleton:
@@ -84,18 +85,12 @@ class HumanFollower:
 
                     # setting last known position regardless of if the goal is sent or not
                     # angle is not important. Last Known position only needs the coordinates
-                    self.lastKnownPosition = GoalEuler(legPosition.x, legPosition.y, 0)                    
+                    self.lastKnownPosition = GoalEuler(legPosition.x, legPosition.y, 0)            
 
-                    # computing target point that is set distance away    
-                    differenceX = legPosition.x - trans[0]
-                    differenceY = legPosition.y - trans[1]
-                    
-                    # calculating target location
-                    goalAngle = math.atan2(differenceY, differenceX)
-
-                    # publish computed goal
-                    (distErr, angleErr) = self.getError(differenceX, differenceY, goalAngle, trans, rot)
+                    # compute linear and angular speed
+                    (distErr, angleErr) = self.getError(legPosition, trans, rot)
                     speed = min(distErr, MAX_SPEED, self.linearSpeed + SPEED_STEP)
+                    angle = min(angleErr, MAX_ANGLE)
 
                     ## make twist messages
                     cmd = Twist()
@@ -123,6 +118,7 @@ class HumanFollower:
         
         if (not sentGoal):
             # no new goal sent. slow down
+            rospy.log("not sending new goal")
             self.linearSpeed = max(self.linearSpeed - SPEED_STEP, 0)
             
             cmd = Twist()
@@ -137,17 +133,22 @@ class HumanFollower:
     Takes the positions of the legs and outputs the error between self and target goal
     target goal already includes the DIST_FROM_TARGET constants
     '''
-    def getError(self, goalX, goalY, angle, trans, rot):
+    def getError(self, legPosition, trans, rot):
         # calculates the error in angle between current pose and goal vector
         # assumes inputs in the same frame
+
+        # computing target point that is set distance away    
+        differenceX = legPosition.x - trans[0]
+        differenceY = legPosition.y - trans[1]
+        
+        # calculating target location
+        goalAngle = math.atan2(differenceY, differenceX)
 
         q = (rot[0], rot[1], rot[2], rot[3])
         self_angles = tf.transformations.euler_from_quaternion(q)
 
-        angleErr = angle - self_angles[2] # rotation around z axis
-        xErr = goalX - trans[0]
-        yErr = goalY - trans[1]
-        distErr = math.hypot(xErr, yErr) - DIST_FROM_TARGET
+        angleErr = goalAngle - self_angles[2] # rotation around z axis
+        distErr = math.hypot(diffX, diffY) - DIST_FROM_TARGET
 
         return (distErr, angleErr)
 
