@@ -94,8 +94,7 @@ class HumanFollower:
                     goalAngle = math.atan2(differenceY, differenceX)
 
                     # publish computed goal
-                    (xErr, yErr, angleErr) = self.getError(differenceX, differenceY, goalAngle, trans, rot)
-                    distErr = max(math.hypot(xErr, yErr) - DIST_FROM_TARGET, 0)
+                    (distErr, angleErr) = self.getError(differenceX, differenceY, goalAngle, trans, rot)
                     speed = min(distErr, MAX_SPEED, self.linearSpeed + SPEED_STEP)
 
                     ## make twist messages
@@ -134,6 +133,10 @@ class HumanFollower:
     # log empty line at the end to distingush cycles
     rospy.loginfo("") 
 
+    ''' 
+    Takes the positions of the legs and outputs the error between self and target goal
+    target goal already includes the DIST_FROM_TARGET constants
+    '''
     def getError(self, goalX, goalY, angle, trans, rot):
         # calculates the error in angle between current pose and goal vector
         # assumes inputs in the same frame
@@ -144,8 +147,9 @@ class HumanFollower:
         angleErr = angle - self_angles[2] # rotation around z axis
         xErr = goalX - trans[0]
         yErr = goalY - trans[1]
+        distErr = math.hypot(xErr, yErr) - DIST_FROM_TARGET
 
-        return (xErr, yErr, angleErr)
+        return (distErr, angleErr)
 
             
     def findReliableTarget(self, data, roboPosition):
