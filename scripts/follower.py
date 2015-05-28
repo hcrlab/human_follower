@@ -127,7 +127,7 @@ class HumanFollower:
             self.pub.publish(cmd)
 
     # log empty line at the end to distingush cycles
-    rospy.loginfo("") 
+    rospy.loginfo("\n") 
 
     ''' 
     Takes the positions of the legs and outputs the error between self and target goal
