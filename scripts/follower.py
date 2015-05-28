@@ -118,7 +118,7 @@ class HumanFollower:
         
         if (not sentGoal):
             # no new goal sent. slow down
-            rospy.log("not sending new goal")
+            rospy.loginfo("not sending new goal")
             self.linearSpeed = max(self.linearSpeed - SPEED_STEP, 0)
             
             cmd = Twist()
