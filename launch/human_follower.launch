@@ -2,4 +2,5 @@
 <include file="$(find turtlebot_bringup)/launch/minimal.launch"/>
 <include file="$(find human_follower)/launch/turtlebot_leg_detector.launch"/>
 <include file="$(find human_follower)/launch/gmapping_demo.launch"/>
+<node pkg="human_follower" name="human_follower" type="follower.py" output="screen"/>
 </launch>
