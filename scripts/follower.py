@@ -23,9 +23,9 @@ RELIABILITY_MIN = .4 #minimum reliability of the position
 DIST_FROM_TARGET = .7 # how far away the robot should stop from the target
 MAX_SPEED = 0.5 # max linear speed
 MAX_ANGLE = 0.9 # max angular speed
-ANGULAR_SCALE = 7 # scale from angle difference in radians to twist velocity
+ANGULAR_SCALE = 8 # scale from angle difference in radians to twist velocity
 SPEED_STEP = 0.02 # max speed increase allowed
-ANGULAR_STEP = 0.03 # max angular speed increased allowed 
+ANGULAR_STEP = 0.05 # max angular speed increased allowed 
 
 class ListenerSingleton:
     created = False
