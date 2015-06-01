@@ -15,7 +15,6 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 ## detection constants
 DIST_MIN = .3 # how close is too close that robot won't send a new goal
 DIST_MAX = 3 # how far is too far that robot should not consider it as new person
-ANGLE_THRESHOLD = math.pi / 6 # how wide is too wide robot will send new goal
 PROXIMITY_MAX = .4 # how far from last known position leg detector should consider to be probable
 R_SCALE = .5 # scale from distance to reliability
 RELIABILITY_MIN = .4 #minimum reliability of the position
@@ -23,9 +22,10 @@ RELIABILITY_MIN = .4 #minimum reliability of the position
 ## driving constants
 DIST_FROM_TARGET = .7 # how far away the robot should stop from the target
 MAX_SPEED = 0.5 # max linear speed
-MAX_ANGLE = 1 # max angular speed
-ANGULAR_SCALE = 8 # scale from angle difference in radians to twist velocity
-SPEED_STEP = 0.02 # max speed increase allowed 
+MAX_ANGLE = 0.9 # max angular speed
+ANGULAR_SCALE = 7 # scale from angle difference in radians to twist velocity
+SPEED_STEP = 0.02 # max speed increase allowed
+ANGULAR_STEP = 0.03 # max angular speed increased allowed 
 
 class ListenerSingleton:
     created = False
@@ -53,6 +53,7 @@ class HumanFollower:
         self.pub = rospy.Publisher("cmd_vel_mux/input/teleop", Twist, queue_size = 10)
         self.positionPub = rospy.Publisher("currentPosition", PoseStamped, queue_size = 10)
 
+        self.angularSpeed = 0
         self.linearSpeed = 0
         self.lastKnownPosition = None
         self.trackedObjectID = "Steve"
@@ -92,6 +93,11 @@ class HumanFollower:
                     (distErr, angleErr) = self.getError(legPosition, trans, rot)
                     speed = min(distErr, MAX_SPEED, self.linearSpeed + SPEED_STEP)
                     angle = min(angleErr * ANGULAR_SCALE, MAX_ANGLE)
+                    if (angle >= 0) {
+                        angle = min(angle, self.angularSpeed + ANGULAR_STEP)
+                    } else {  # angle < 0
+                        angle = max(angle, self.angularSpeed - ANGULAR_STEP)
+                    }
 
                     ## make twist messages
                     cmd = Twist()
@@ -109,6 +115,7 @@ class HumanFollower:
 
                     sentGoal = True;
                     self.linearSpeed = speed
+                    self.angularSpeed = angle
 
                 except Exception as expt:
                     #exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -120,11 +127,21 @@ class HumanFollower:
         if (not sentGoal):
             # no new goal sent. slow down
             rospy.loginfo("not sending new goal")
-            self.linearSpeed = max(self.linearSpeed - SPEED_STEP, 0)
+            speed = max(self.linearSpeed - SPEED_STEP, 0)
+            if (self.angularSpeed >= 0) {
+                angle = max(0, self.angularSpeed - ANGULAR_STEP)
+            } else {  # angle < 0
+                angle = min(0, self.angularSpeed + ANGULAR_STEP)
+            }
             
+            # sending twist messages
             cmd = Twist()
-            cmd.linear.x = self.linearSpeed
-            cmd.angular.z = 0
+            cmd.linear.x = speed
+            cmd.angular.z = angle
+
+            # update self records
+            self.linearSpeed = speed
+            self.angularSpeed = angle
             self.pub.publish(cmd)
 
     # log empty line at the end to distingush cycles
