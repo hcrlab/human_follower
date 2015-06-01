@@ -93,11 +93,10 @@ class HumanFollower:
                     (distErr, angleErr) = self.getError(legPosition, trans, rot)
                     speed = min(distErr, MAX_SPEED, self.linearSpeed + SPEED_STEP)
                     angle = min(angleErr * ANGULAR_SCALE, MAX_ANGLE)
-                    if (angle >= 0) {
+                    if (angle >= 0):
                         angle = min(angle, self.angularSpeed + ANGULAR_STEP)
-                    } else {  # angle < 0
+                    else:  # angle < 0
                         angle = max(angle, self.angularSpeed - ANGULAR_STEP)
-                    }
 
                     ## make twist messages
                     cmd = Twist()
@@ -128,11 +127,10 @@ class HumanFollower:
             # no new goal sent. slow down
             rospy.loginfo("not sending new goal")
             speed = max(self.linearSpeed - SPEED_STEP, 0)
-            if (self.angularSpeed >= 0) {
+            if (self.angularSpeed >= 0):
                 angle = max(0, self.angularSpeed - ANGULAR_STEP)
-            } else {  # angle < 0
+            else:  # angle < 0
                 angle = min(0, self.angularSpeed + ANGULAR_STEP)
-            }
             
             # sending twist messages
             cmd = Twist()
